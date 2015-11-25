@@ -1,0 +1,62 @@
+This patch modifies the default style of the 'status' column, to display
+'Blocked' instead of 'Pending' for +BLOCKED tasks.
+
+The behaviour change should should probably become a custom style if it
+were to be upstreamed, but upstream has rejected the idea (see TW-301).
+
+diff --git a/src/columns/ColStatus.cpp b/src/columns/ColStatus.cpp
+index fae2003..b97df5f 100644
+--- a/src/columns/ColStatus.cpp
++++ b/src/columns/ColStatus.cpp
+@@ -70,7 +70,10 @@ void ColumnStatus::measure (Task& task, unsigned int& minimum, unsigned int& max
+       _style == "long")
+   {
+     if (status == Task::pending)
+-      minimum = maximum = utf8_width (STRING_COLUMN_LABEL_STAT_PE);
++      if (task.is_blocked)
++        minimum = maximum = utf8_width (STRING_COLUMN_LABEL_STAT_BL);
++      else
++        minimum = maximum = utf8_width (STRING_COLUMN_LABEL_STAT_PE);
+     else if (status == Task::deleted)
+       minimum = maximum = utf8_width (STRING_COLUMN_LABEL_STAT_DE);
+     else if (status == Task::waiting)
+@@ -104,6 +107,9 @@ void ColumnStatus::render (
+     else if (status == Task::deleted)   value = STRING_COLUMN_LABEL_STAT_DE;
+     else if (status == Task::waiting)   value = STRING_COLUMN_LABEL_STAT_WA;
+     else if (status == Task::recurring) value = STRING_COLUMN_LABEL_STAT_RE;
++
++    if (status == Task::pending && task.is_blocked)
++      value = STRING_COLUMN_LABEL_STAT_BL;
+   }
+ 
+   else if (_style == "short")
+@@ -113,6 +119,9 @@ void ColumnStatus::render (
+     else if (status == Task::deleted)   value = STRING_COLUMN_LABEL_STAT_D;
+     else if (status == Task::waiting)   value = STRING_COLUMN_LABEL_STAT_W;
+     else if (status == Task::recurring) value = STRING_COLUMN_LABEL_STAT_R;
++
++    if (status == Task::pending && task.is_blocked)
++      value = STRING_COLUMN_LABEL_STAT_B;
+   }
+ 
+   renderStringLeft (lines, width, color, value);
+diff --git a/src/l10n/eng-USA.h b/src/l10n/eng-USA.h
+index ac1cf3f..ddd231c 100644
+--- a/src/l10n/eng-USA.h
++++ b/src/l10n/eng-USA.h
+@@ -198,6 +198,7 @@
+ #define STRING_COLUMN_LABEL_ACTIVE   "A"
+ #define STRING_COLUMN_LABEL_STATUS   "Status"
+ #define STRING_COLUMN_LABEL_STAT     "St"
++#define STRING_COLUMN_LABEL_STAT_BL  "Blocked"
+ #define STRING_COLUMN_LABEL_STAT_PE  "Pending"
+ #define STRING_COLUMN_LABEL_STAT_CO  "Completed"
+ #define STRING_COLUMN_LABEL_STAT_DE  "Deleted"
+@@ -208,6 +209,7 @@
+ #define STRING_COLUMN_LABEL_STAT_D   "D"
+ #define STRING_COLUMN_LABEL_STAT_W   "W"
+ #define STRING_COLUMN_LABEL_STAT_R   "R"
++#define STRING_COLUMN_LABEL_STAT_B   "B"
+ #define STRING_COLUMN_LABEL_TAGS     "Tags"
+ #define STRING_COLUMN_LABEL_TAG      "Tag"
+ #define STRING_COLUMN_LABEL_UUID     "UUID"
